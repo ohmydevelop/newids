@@ -25,6 +25,7 @@ export function management(
   admin: z.infer<typeof adminConfig>,
   legacy: string[],
   store: Store,
+  caBase64?: string,
 ) {
   if (
     !/^https:\/\/[a-zA-Z0-9.[\]:-]+$/.test(origin) ||
@@ -113,6 +114,10 @@ export function management(
     res.clearCookie("newids_session", { path: "/admin" });
     res.json({ ok: true });
   });
+  if (caBase64)
+    app.get("/admin/api/ca.pem", (_req, res) => {
+      res.attachment("newids-ca.pem").send(Buffer.from(caBase64, "base64"));
+    });
   app.get("/admin/api/status", (_req, res) =>
     res.json({
       hosts: store.hosts(ids()),
@@ -122,6 +127,7 @@ export function management(
         )
         .all(Date.now()),
       mcp: origin + "/mcp",
+      private_ca: Boolean(caBase64),
       key_active: !!db
         .prepare("SELECT 1 FROM admin_key WHERE owner=?")
         .get(admin.id),
@@ -149,9 +155,14 @@ export function management(
       res.status(409).json({ error: "主机名已注册" });
       return;
     }
+    const setup = caBase64
+      ? `printf %s '${caBase64}' | base64 -d >"$d/ca.pem"; `
+      : "";
+    const trust = caBase64 ? ' --cacert "$d/ca.pem"' : "";
+    const caArg = caBase64 ? ' "$d/ca.pem"' : "";
     res.json({
       expires,
-      command: `(set -e; f=$(mktemp); trap 'rm -f "$f"' EXIT; curl -fsS '${origin}/downloads/install-client.sh' -o "$f"; sudo bash "$f" '${origin}' '${host}' '${token}')`,
+      command: `(set -e; d=$(mktemp -d); trap 'rm -rf "$d"' EXIT; ${setup}curl -fsS${trust} '${origin}/downloads/install-client.sh' -o "$d/install"; sudo bash "$d/install" '${origin}' '${host}' '${token}'${caArg})`,
     });
   });
   for (const asset of [

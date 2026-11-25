@@ -1,6 +1,6 @@
 import { App } from "@modelcontextprotocol/ext-apps";
 import { z } from "zod";
-const app = new App({ name: "NewIDS investigation", version: "1.1.0" });
+const app = new App({ name: "NewIDS investigation", version: "1.1.1" });
 const main = document.querySelector("main")!;
 const record = z.record(z.string(), z.unknown());
 function line(parent: Element, tag: string, text: string) {

@@ -199,6 +199,11 @@
         <section>
           <h2>个人 MCP Key</h2>
           <p>MCP 地址 <code id="endpoint"></code></p>
+          <p id="ca" hidden>
+            首次配置 MCP 客户端时，请<a href="/admin/api/ca.pem" download
+              >下载本平台 CA 证书</a
+            >并添加到客户端信任库。
+          </p>
           <button id="key">生成 MCP Key</button>
           <div id="issued" hidden>
             <p>请保存此 Key，离开页面后无法再次查看。</p>
@@ -246,6 +251,7 @@
         el("console").hidden = false;
         el("logout").hidden = false;
         el("endpoint").textContent = s.mcp;
+        el("ca").hidden = !s.private_ca;
         active = s.key_active;
         el("key").textContent = active ? "轮换 MCP Key" : "生成 MCP Key";
         el("hosts").replaceChildren();

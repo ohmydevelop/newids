@@ -1,2 +1,3 @@
 #!/bin/sh
+if [ -r /etc/newids/probe-ca.pem ]; then export SSL_CERT_FILE=/etc/newids/probe-ca.pem; fi
 exec /usr/bin/setpriv --reuid=newids-collector --regid=newids-collector --clear-groups --no-new-privs /opt/newids/client/newids-client collector /etc/newids/collector.json

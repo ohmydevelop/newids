@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 umask 077
-if [[ $EUID != 0 || $# != 3 ]]; then echo '请在探针主机上运行管理页生成的命令。' >&2; exit 2; fi
+if [[ $EUID != 0 || ( $# != 3 && $# != 4 ) ]]; then echo '请在探针主机上运行管理页生成的命令。' >&2; exit 2; fi
 origin=$1 host=$2 invite=$3
 [[ $(uname -m) == x86_64 ]] || { echo '仅支持 Linux x86_64' >&2; exit 1; }
 missing=false
@@ -32,6 +32,10 @@ exec 9>/etc/newids/install.lock
 flock -n 9
 state=/etc/newids/enrollment.json
 if [[ ! -f "$state" && ( -f /etc/newids/worker.json || -f /etc/newids/collector.json ) ]]; then echo '检测到已有手工配置，已停止安装。' >&2; exit 1; fi
+if [[ $# == 4 ]]; then
+ install -m644 "$4" "$stage/ca.pem"
+ export CURL_CA_BUNDLE="$stage/ca.pem"
+fi
 cd "$stage"
 curl -fsS "$origin/downloads/client.tar.gz" -o client.tar.gz
 curl -fsS "$origin/downloads/client.tar.gz.sha256" -o SHA256SUMS
@@ -60,6 +64,7 @@ if [[ $status != 204 ]]; then
  curl -fsS -H @authorization "$origin/v1/identity" -o identity
  python3 -c 'import json,sys;sys.exit(json.load(open("identity"))["host"]!=sys.argv[1])' "$host"
 fi
+if [[ $# == 4 ]]; then install -m644 "$stage/ca.pem" /etc/newids/probe-ca.pem; fi
 install -d -m755 /opt/newids/client
 # Rename complete files on the same filesystem; running processes retain their executable inode.
 copy=$(mktemp -d /opt/newids/.probe-install.XXXXXX)
@@ -86,6 +91,10 @@ if ! grep -Eiq '^[[:space:]]*log_format[[:space:]]*=[[:space:]]*ENRICHED[[:space
  cp -an /etc/audit/auditd.conf /etc/audit/auditd.conf.pre-newids
  sed -i '/^[[:space:]]*log_format[[:space:]]*=/Id' /etc/audit/auditd.conf
  printf '\nlog_format = ENRICHED\n' >> /etc/audit/auditd.conf
+fi
+if [[ $# == 4 ]]; then
+ install -d -m755 /etc/systemd/system/newids-worker.service.d
+ printf '[Service]\nEnvironment=SSL_CERT_FILE=/etc/newids/probe-ca.pem\n' >/etc/systemd/system/newids-worker.service.d/tls.conf
 fi
 systemctl daemon-reload
 systemctl enable --now auditd

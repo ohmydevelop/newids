@@ -24,7 +24,13 @@ const config = z
     listen: z.string().default("127.0.0.1"),
     port: z.number().int().min(1).max(65535),
     database: z.string(),
-    tls: z.object({ cert: z.string(), key: z.string() }).optional(),
+    tls: z
+      .object({
+        cert: z.string(),
+        key: z.string(),
+        probeCA: z.string().optional(),
+      })
+      .optional(),
     origin: z.url().optional(),
     admin: adminConfig.optional(),
     hosts: z.array(z.object({ id: label, token: secret })),
@@ -86,6 +92,9 @@ const consoleAuth =
         config.admin,
         config.hosts.map((h) => h.id),
         db,
+        config.tls?.probeCA
+          ? readFileSync(config.tls.probeCA).toString("base64")
+          : undefined,
       )
     : undefined;
 function bearer(req: express.Request) {
@@ -156,7 +165,7 @@ const html = readFileSync(
   ),
 );
 function buildMcp(user: { id: string; hosts: string[] }) {
-  const m = new McpServer({ name: "newids", version: "1.1.0" });
+  const m = new McpServer({ name: "newids", version: "1.1.1" });
   const meta = { ui: { resourceUri: uri } };
   function pack(data: Record<string, unknown>) {
     return {
