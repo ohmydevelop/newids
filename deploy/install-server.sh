@@ -48,4 +48,5 @@ if ((port < 1024)); then
 fi
 systemctl daemon-reload
 systemctl enable --now newids-server
-printf '管理界面 %s/admin\n管理员账号和密码见 sudo cat /etc/newids/admin-login\n' "$origin"
+mapfile -t credentials </etc/newids/admin-login
+printf '\nWeb 地址：%s/admin\n账号：%s\n密码：%s\n' "$origin" "${credentials[0]}" "${credentials[1]}"
