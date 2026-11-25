@@ -1,0 +1,330 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>NewIDS · 探针管理</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        margin: 0;
+        background: #f4f6f5;
+        color: #152b24;
+        font:
+          15px/1.6 Inter,
+          system-ui,
+          sans-serif;
+      }
+      header {
+        background: #153c32;
+        color: white;
+        padding: 13px max(5vw, 20px);
+        display: flex;
+        align-items: center;
+        gap: 16px;
+      }
+      header strong {
+        font-size: 22px;
+        letter-spacing: -0.05em;
+      }
+      header button {
+        margin-left: auto;
+      }
+      main {
+        max-width: 960px;
+        margin: 48px auto;
+        padding: 0 20px;
+      }
+      h1 {
+        font-size: 32px;
+        margin: 0 0 20px;
+      }
+      h2 {
+        font-size: 18px;
+        margin: 0 0 12px;
+      }
+      section {
+        background: white;
+        border: 1px solid #d5ded9;
+        border-radius: 12px;
+        padding: 22px;
+        margin: 16px 0;
+      }
+      label {
+        display: block;
+        margin: 12px 0;
+      }
+      input,
+      textarea {
+        font: inherit;
+        border: 1px solid #acbcb4;
+        padding: 8px 10px;
+        border-radius: 6px;
+        max-width: 100%;
+      }
+      textarea {
+        width: 100%;
+        height: 6em;
+        font: 13px/1.5 monospace;
+      }
+      button {
+        font: inherit;
+        font-weight: 600;
+        color: white;
+        background: #17644e;
+        border: 0;
+        border-radius: 6px;
+        padding: 8px 14px;
+        cursor: pointer;
+      }
+      button:focus-visible,
+      input:focus-visible {
+        outline: 3px solid #578df2;
+      }
+      button:disabled {
+        opacity: 0.55;
+      }
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        text-align: left;
+      }
+      td,
+      th {
+        border-top: 1px solid #e3eae6;
+        padding: 8px;
+        overflow-wrap: anywhere;
+      }
+      .scroll {
+        overflow-x: auto;
+      }
+      form.inline,
+      .bar {
+        display: flex;
+        gap: 10px;
+        flex-wrap: wrap;
+        align-items: center;
+      }
+      .bar {
+        justify-content: space-between;
+      }
+      #login {
+        max-width: 380px;
+        margin: 10vh auto;
+      }
+      #login input {
+        width: 100%;
+      }
+      #notice {
+        color: #82371a;
+      }
+      code {
+        overflow-wrap: anywhere;
+      }
+      small {
+        color: #42594d;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <strong>NewIDS</strong><span>探针管理</span
+      ><button id="logout" hidden>退出登录</button>
+    </header>
+    <main>
+      <p role="status" id="notice"></p>
+      <section id="login" hidden>
+        <h1>管理员登录</h1>
+        <form id="auth">
+          <label
+            >账号
+            <input
+              name="id"
+              autocomplete="username"
+              required
+              value="admin" /></label
+          ><label
+            >密码
+            <input
+              name="password"
+              type="password"
+              autocomplete="current-password"
+              required /></label
+          ><button>登录</button>
+        </form>
+      </section>
+      <div id="console" hidden>
+        <h1>探针管理</h1>
+        <section>
+          <div class="bar">
+            <h2>已注册探针</h2>
+            <button id="refresh">刷新</button>
+          </div>
+          <div class="scroll">
+            <table>
+              <thead>
+                <tr>
+                  <th>主机</th>
+                  <th>执行器</th>
+                  <th>检测器</th>
+                  <th>最近心跳</th>
+                </tr>
+              </thead>
+              <tbody id="hosts"></tbody>
+            </table>
+          </div>
+          <p id="empty">暂无探针</p>
+        </section>
+        <section>
+          <h2>安装探针</h2>
+          <form id="pair" class="inline">
+            <input
+              name="host"
+              aria-label="主机名"
+              placeholder="linux-01"
+              pattern="[A-Za-z0-9][A-Za-z0-9_.\-]{0,63}"
+              required
+            /><button>生成配对命令</button>
+          </form>
+          <div id="invite" hidden>
+            <p>
+              在目标 Linux 主机运行以下命令。配对码 10 分钟内有效，可使用一次。
+            </p>
+            <textarea id="command" readonly aria-label="探针安装命令"></textarea
+            ><button data-copy="command">复制命令</button>
+          </div>
+        </section>
+        <section>
+          <h2>个人 MCP Key</h2>
+          <p>MCP 地址 <code id="endpoint"></code></p>
+          <button id="key">生成 MCP Key</button>
+          <div id="issued" hidden>
+            <p>请保存此 Key，离开页面后无法再次查看。</p>
+            <textarea readonly id="secret" aria-label="MCP Key"></textarea
+            ><button data-copy="secret">复制 Key</button>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script>
+      const el = (id) => document.getElementById(id);
+      async function api(op, body) {
+        const r = await fetch(
+          "/admin/api/" + op,
+          body === undefined
+            ? {}
+            : {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body),
+              },
+        );
+        if (!r.ok) {
+          if (r.status === 401) {
+            el("login").hidden = false;
+            el("console").hidden = true;
+            el("logout").hidden = true;
+            el("secret").value = el("command").value = "";
+            el("issued").hidden = el("invite").hidden = true;
+          }
+          throw Error(
+            {
+              401: "请登录或检查账号密码",
+              429: "登录尝试过多，请稍后再试",
+              409: "此主机名已注册",
+            }[r.status] || "请求失败 " + r.status,
+          );
+        }
+        return r.json();
+      }
+      let active = false;
+      async function refresh() {
+        const s = await api("status");
+        el("login").hidden = true;
+        el("console").hidden = false;
+        el("logout").hidden = false;
+        el("endpoint").textContent = s.mcp;
+        active = s.key_active;
+        el("key").textContent = active ? "轮换 MCP Key" : "生成 MCP Key";
+        el("hosts").replaceChildren();
+        const rows = s.hosts.map((h) => [
+          h.host_id,
+          h.online ? "在线" : "离线",
+          h.detector_online ? "在线" : "离线",
+          h.last_seen ? new Date(h.last_seen).toLocaleString() : "尚无心跳",
+        ]);
+        for (const p of s.pending)
+          rows.push([
+            p.host,
+            "待配对",
+            "—",
+            "有效至 " + new Date(p.expires).toLocaleTimeString(),
+          ]);
+        el("empty").hidden = rows.length > 0;
+        for (const row of rows) {
+          const tr = document.createElement("tr");
+          for (const value of row) {
+            const td = document.createElement("td");
+            td.textContent = value;
+            tr.append(td);
+          }
+          el("hosts").append(tr);
+        }
+      }
+      function bind(id, event, fn) {
+        el(id).addEventListener(event, async (e) => {
+          e.preventDefault();
+          el("notice").textContent = "";
+          try {
+            await fn();
+          } catch (err) {
+            el("notice").textContent = err.message;
+          }
+        });
+      }
+      bind("auth", "submit", async () => {
+        await api("login", Object.fromEntries(new FormData(el("auth"))));
+        el("auth").reset();
+        await refresh();
+      });
+      bind("logout", "click", async () => {
+        await api("logout", {});
+        location.reload();
+      });
+      bind("refresh", "click", refresh);
+      bind("pair", "submit", async () => {
+        const r = await api(
+          "pair",
+          Object.fromEntries(new FormData(el("pair"))),
+        );
+        el("command").value = r.command;
+        el("invite").hidden = false;
+        await refresh();
+      });
+      bind("key", "click", async () => {
+        if (active && !confirm("轮换会立即停用旧 Key，继续吗？")) return;
+        el("secret").value = (await api("key", {})).key;
+        el("issued").hidden = false;
+        await refresh();
+      });
+      for (const b of document.querySelectorAll("[data-copy]"))
+        b.onclick = async () => {
+          const t = el(b.dataset.copy);
+          try {
+            await navigator.clipboard.writeText(t.value);
+            el("notice").textContent = "已复制";
+          } catch {
+            t.select();
+            el("notice").textContent = "请手动复制选中内容";
+          }
+        };
+      refresh().catch((e) => {
+        el("login").hidden = false;
+        if (!e.message.startsWith("请登录"))
+          el("notice").textContent = e.message;
+      });
+    </script>
+  </body>
+</html>

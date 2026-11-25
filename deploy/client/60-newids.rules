@@ -1,0 +1,2 @@
+-a always,exit -F arch=b64 -S execve,execveat -F success=1 -k newids_exec
+-a always,exit -F arch=b32 -S execve,execveat -F success=1 -k newids_exec

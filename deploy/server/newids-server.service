@@ -1,0 +1,18 @@
+[Unit]
+Description=NewIDS MCP platform
+After=network.target
+[Service]
+ExecStart=/usr/bin/env node /opt/newids/server/dist/server.js /etc/newids/server.json
+Environment=PATH=/usr/local/bin:/usr/bin
+User=newids-server
+Group=newids-server
+StateDirectory=newids-server
+Restart=on-failure
+RestartSec=3
+NoNewPrivileges=yes
+ProtectSystem=strict
+ProtectHome=yes
+PrivateTmp=yes
+UMask=0077
+[Install]
+WantedBy=multi-user.target

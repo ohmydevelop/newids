@@ -1,0 +1,16 @@
+[Unit]
+Description=NewIDS read-only investigation worker
+After=network-online.target
+[Service]
+User=newids-worker
+Group=newids-worker
+ExecStart=/opt/newids/client/newids-client worker /etc/newids/worker.json
+Restart=always
+RestartSec=3
+NoNewPrivileges=yes
+ProtectSystem=strict
+PrivateTmp=yes
+ProtectHome=yes
+UMask=0077
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="zh">
+  <meta charset="utf-8" /><meta
+    name="viewport"
+    content="width=device-width,initial-scale=1"
+  /><title>NewIDS 调查</title
+  ><style>
+    :root {
+      color-scheme: light dark;
+      font:
+        14px Inter,
+        system-ui,
+        sans-serif;
+      color: var(--color-text-primary, CanvasText);
+      background: var(--color-background-primary, Canvas);
+    }
+    body {
+      margin: 16px;
+    }
+    header,
+    nav {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    header {
+      justify-content: space-between;
+    }
+    h1 {
+      font-size: 18px;
+    }
+    button {
+      font: inherit;
+      color: inherit;
+      border: 1px solid #8888;
+      background: transparent;
+      padding: 5px 10px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+    button:hover {
+      background: #8882;
+    }
+    article {
+      padding: 10px 0;
+      border-top: 1px solid #8884;
+    }
+    pre {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      margin: 6px 0;
+      font: 13px/1.55 monospace;
+    }
+    h2 {
+      font-size: 14px;
+    }
+    h3 {
+      font-size: 13px;
+      font-weight: 600;
+    }
+    details {
+      margin: 12px 0;
+    }
+    summary {
+      cursor: pointer;
+    }
+    pre {
+      background: color-mix(in srgb, CanvasText 5%, Canvas);
+      padding: 10px 12px;
+      border-radius: 6px;
+    }
+    small {
+      opacity: 0.75;
+    }
+  </style>
+  <header>
+    <h1>NewIDS 调查</h1>
+    <nav>
+      <button id="hosts">主机</button><button id="alerts">告警时间线</button>
+    </nav>
+  </header>
+  <main aria-live="polite"></main>
+  <script>
+    /*APP*/
+  </script>
+</html>

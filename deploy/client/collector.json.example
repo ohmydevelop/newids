@@ -1,0 +1,7 @@
+{
+  "server": "https://ids.example.internal:8443",
+  "token": "REPLACE_WITH_ENDPOINT_TOKEN",
+  "shellguard": "/opt/newids/client/shellguard",
+  "spool": "/var/lib/newids-collector/alerts.db",
+  "threshold": 0.8
+}

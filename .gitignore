@@ -1,0 +1,5 @@
+/build/
+/release/
+/server/node_modules/
+/server/dist/
+__pycache__/
